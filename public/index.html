@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulseCAD - ER:LC Ultimate Dispatch & MDT Suite</title>
+    <title>PulseCAD - Complete ER:LC Dispatch, MDT, Court & Civilian Suite</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
@@ -11,7 +11,7 @@
 <body>
     <!-- Panic Alert Overlay Banner -->
     <div id="panic-banner" class="panic-banner hidden">
-        🚨 PANIC BUTTON ACTIVE: <span id="panic-unit-name">UNIT</span> REQUIRES IMMEDIATE ASSISTANCE! 🚨
+        🚨 PANIC BUTTON ACTIVE: <span id="panic-unit-name">UNIT</span> REQUIRES EMERGENCY ASSISTANCE! 🚨
         <button class="btn danger-btn" onclick="clearPanic()">Clear Panic</button>
     </div>
 
@@ -20,24 +20,28 @@
         <aside class="sidebar">
             <div class="brand">
                 <h2>PULSE<span>CAD</span></h2>
-                <p>ER:LC Ultimate Edition</p>
+                <p id="server-brand-sub">ER:LC Official Suite</p>
             </div>
             <nav class="nav-links">
                 <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dispatch Dashboard</button>
                 <button class="nav-btn" onclick="switchTab('mdt')">💻 Mobile Data Terminal</button>
+                <button class="nav-btn" onclick="switchTab('rms')">📋 RMS & Reports</button>
                 <button class="nav-btn" onclick="switchTab('civilian')">👤 Civilian Portal</button>
-                <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLO & Wanted Board</button>
+                <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLOs & Wanted</button>
+                <button class="nav-btn" onclick="switchTab('court')">⚖️ DOJ Court Dockets</button>
                 <button class="nav-btn" onclick="switchTab('penalcode')">📖 Penal Code & 10-Codes</button>
+                <button class="nav-btn" onclick="switchTab('admin')">⚙️ Admin Control Panel</button>
             </nav>
             <div class="user-panel">
                 <span id="user-status-dot" class="status-indicator online"></span>
                 <div class="user-info">
-                    <input type="text" id="global-unit-name" value="101 - Officer John" onchange="updateUserIdentity()">
+                    <input type="text" id="global-unit-name" value="101 - Officer John" onchange="updateUserIdentity()" title="Callsign / Name">
                     <select id="global-dept-select" onchange="updateUserIdentity()">
                         <option value="LCSO">LCSO (Sheriff)</option>
                         <option value="RCPD">RCPD (Police)</option>
                         <option value="RCFR">RCFR (Fire/EMS)</option>
                         <option value="TPS">TPS (State Patrol)</option>
+                        <option value="DOT">DOT (Roadside)</option>
                         <option value="CIV">CIV (Civilian)</option>
                     </select>
                 </div>
@@ -52,7 +56,7 @@
                 <header class="content-header">
                     <div>
                         <h1>Live Dispatch Center</h1>
-                        <p class="subtitle">Liberty County Emergency Dispatch & Incident Management</p>
+                        <p class="subtitle">Liberty County Emergency Operations & Unit Tracking</p>
                     </div>
                     <div class="header-actions">
                         <button class="btn danger" onclick="triggerPanicButton()">🚨 PANIC BUTTON</button>
@@ -71,7 +75,7 @@
 
                     <div class="panel">
                         <div class="panel-header">
-                            <h3>Active Units & Unit Roster</h3>
+                            <h3>Active Units & Roster</h3>
                             <span id="active-units-count" class="badge">0</span>
                         </div>
                         <div id="units-list" class="card-list"></div>
@@ -84,7 +88,7 @@
                 <header class="content-header">
                     <div>
                         <h1>Mobile Data Terminal (MDT)</h1>
-                        <p class="subtitle">Secure Law Enforcement / EMS Terminal</p>
+                        <p class="subtitle">In-Vehicle Law Enforcement & EMS Terminal</p>
                     </div>
                     <div class="mdt-status-changer">
                         <label>Active Status:</label>
@@ -101,13 +105,13 @@
 
                 <div class="mdt-grid">
                     <div class="panel query-panel">
-                        <h3>DMV & Criminal Database Lookup</h3>
+                        <h3>NLETS / DMV Database Lookup</h3>
                         <div class="search-box">
-                            <input type="text" id="db-search-input" placeholder="Search name, license plate, or DOB...">
+                            <input type="text" id="db-search-input" placeholder="Search name, license plate (e.g. ERLC-992), or DOB...">
                             <button class="btn primary" onclick="runDatabaseQuery()">Run Query</button>
                         </div>
                         <div id="db-results" class="results-box">
-                            <p class="placeholder-text">Enter a civilian name (e.g., John Doe) or vehicle plate (e.g., ERLC-992) to view records, warrants, and registrations.</p>
+                            <p class="placeholder-text">Enter a civilian name or vehicle plate to view driver's license, active warrants, firearms permits, and registered property.</p>
                         </div>
                     </div>
 
@@ -116,29 +120,45 @@
                         <div class="quick-actions">
                             <div class="form-group">
                                 <label>Current Location / Street / Postal</label>
-                                <input type="text" id="unit-loc-input" placeholder="e.g. Main Street / Bank Blvd (Postal 104)">
+                                <input type="text" id="unit-loc-input" placeholder="e.g. Bank Blvd (Postal 104)">
                             </div>
                             <div class="form-group">
                                 <label>Unit Notes / Assignment</label>
-                                <input type="text" id="unit-notes-input" placeholder="e.g. Traffic Detail / Sector 4">
+                                <input type="text" id="unit-notes-input" placeholder="e.g. Traffic Patrol / Sector 2">
                             </div>
                             <button class="btn primary full" onclick="submitFullUnitUpdate()">Update MDT Status & Location</button>
                         </div>
 
-                        <div style="margin-top: 24px;">
-                            <h3>Recent Calls Quick-View</h3>
-                            <div id="mdt-calls-ref" class="card-list" style="max-height: 200px;"></div>
+                        <div style="margin-top: 20px;">
+                            <h3>Active Calls Quick-View</h3>
+                            <div id="mdt-calls-ref" class="card-list" style="max-height: 180px;"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- TAB 3: Civilian Portal -->
+            <!-- TAB 3: RMS & Reports -->
+            <section id="tab-rms" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>Records Management System (RMS)</h1>
+                        <p class="subtitle">Issue Citations, Warnings, Field Interviews, and Arrest Reports</p>
+                    </div>
+                    <button class="btn primary" onclick="openModal('rms-modal')">+ Create New Report</button>
+                </header>
+
+                <div class="panel">
+                    <h3>Filed Department Reports & Citations</h3>
+                    <div id="rms-reports-list" class="card-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Civilian Portal -->
             <section id="tab-civilian" class="tab-pane">
                 <header class="content-header">
                     <div>
                         <h1>Civilian Persona Portal</h1>
-                        <p class="subtitle">Manage your ER:LC civilian characters, vehicles, and registered assets</p>
+                        <p class="subtitle">Manage your ER:LC civilian characters, vehicles, and registered weapons</p>
                     </div>
                     <button class="btn primary" onclick="openModal('civ-modal')">+ Create Civilian Persona</button>
                 </header>
@@ -149,12 +169,12 @@
                 </div>
             </section>
 
-            <!-- TAB 4: BOLOs & Wanted Board -->
+            <!-- TAB 5: BOLOs & Wanted Board -->
             <section id="tab-bolos" class="tab-pane">
                 <header class="content-header">
                     <div>
                         <h1>BOLO & Wanted Board</h1>
-                        <p class="subtitle">Active BOLO notices broadcasted across all department MDTs</p>
+                        <p class="subtitle">Active BOLO notices broadcasted across all department terminals</p>
                     </div>
                     <button class="btn primary" onclick="openModal('bolo-modal')">+ Post New BOLO</button>
                 </header>
@@ -164,7 +184,23 @@
                 </div>
             </section>
 
-            <!-- TAB 5: Penal Code & 10-Codes -->
+            <!-- TAB 6: DOJ Court Dockets -->
+            <section id="tab-court" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>Department of Justice (DOJ) Court Dockets</h1>
+                        <p class="subtitle">Active criminal cases, trials, warrants, and judge sentencing</p>
+                    </div>
+                    <button class="btn primary" onclick="openModal('court-modal')">+ File Court Case</button>
+                </header>
+
+                <div class="panel">
+                    <h3>Pending & Closed Court Cases</h3>
+                    <div id="court-cases-list" class="card-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 7: Penal Code & 10-Codes -->
             <section id="tab-penalcode" class="tab-pane">
                 <header class="content-header">
                     <div>
@@ -197,6 +233,37 @@
                 </div>
             </section>
 
+            <!-- TAB 8: Admin Control Panel -->
+            <section id="tab-admin" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>Community Admin Panel</h1>
+                        <p class="subtitle">Configure PulseCAD server name, CAD mode, and webhooks</p>
+                    </div>
+                </header>
+
+                <div class="panel" style="max-width: 600px;">
+                    <h3>Server Configuration Settings</h3>
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label>Server Community Name</label>
+                        <input type="text" id="admin-server-name" placeholder="e.g. Liberty County Roleplay">
+                    </div>
+                    <div class="form-group">
+                        <label>CAD Operating Mode</label>
+                        <select id="admin-cad-mode">
+                            <option value="Strict RP">Strict Roleplay</option>
+                            <option value="Normal Public">Normal Public Server</option>
+                            <option value="Training Server">Training Server</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Discord Webhook URL (For 911 Alerts)</label>
+                        <input type="text" id="admin-webhook" placeholder="https://discord.com/api/webhooks/...">
+                    </div>
+                    <button class="btn primary" onclick="saveAdminSettings()">Save Configuration</button>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -220,7 +287,7 @@
             </div>
             <div class="form-group">
                 <label>Location & Street</label>
-                <input type="text" id="call-location" placeholder="e.g. Gas Station / Bank Blvd">
+                <input type="text" id="call-location" placeholder="e.g. Bank Blvd">
             </div>
             <div class="form-group">
                 <label>Postal Number</label>
@@ -233,6 +300,38 @@
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
                 <button class="btn primary" onclick="submitNewCall()">Dispatch Call</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RMS Report Modal -->
+    <div id="rms-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create Law Enforcement Report / Citation</h3>
+            <div class="form-group">
+                <label>Report Type</label>
+                <select id="rms-type">
+                    <option value="Citation / Ticket">Citation / Ticket</option>
+                    <option value="Written Warning">Written Warning</option>
+                    <option value="Arrest Report">Arrest Report</option>
+                    <option value="Field Interview">Field Interview (FI)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Subject / Suspect Name</label>
+                <input type="text" id="rms-subject" placeholder="e.g. Jane Smith">
+            </div>
+            <div class="form-group">
+                <label>Officer / Unit Filing</label>
+                <input type="text" id="rms-officer" value="101 - Officer John">
+            </div>
+            <div class="form-group">
+                <label>Violations / Charges / Summary</label>
+                <textarea id="rms-narrative" placeholder="Describe the offense, fine amount, or investigation details..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn primary" onclick="submitRMSReport()">File Report to RMS</button>
             </div>
         </div>
     </div>
@@ -294,6 +393,29 @@
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
                 <button class="btn primary" onclick="submitCivilianPersona()">Create Persona</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Court Docket Modal -->
+    <div id="court-modal" class="modal">
+        <div class="modal-content">
+            <h3>File DOJ Court Case</h3>
+            <div class="form-group">
+                <label>Defendant Name</label>
+                <input type="text" id="court-defendant" placeholder="e.g. Jane Smith">
+            </div>
+            <div class="form-group">
+                <label>Charges Filed</label>
+                <input type="text" id="court-charge" placeholder="e.g. Felony Evasion & Grand Theft">
+            </div>
+            <div class="form-group">
+                <label>Assigned Judge</label>
+                <input type="text" id="court-judge" placeholder="e.g. Judge Miller">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn primary" onclick="submitCourtCase()">File Case Docket</button>
             </div>
         </div>
     </div>

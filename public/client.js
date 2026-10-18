@@ -1,16 +1,18 @@
 const socket = io();
 
 let currentState = {
+    settings: { serverName: 'Liberty County Roleplay', cadMode: 'Strict RP', dispatchAlertWebhook: '' },
     units: [],
     calls: [],
     bolos: [],
     citizens: [],
+    records: [],
+    courtCases: [],
     penalCode: [],
     panicButtonActive: false,
     panicUnit: null
 };
 
-// Listen for state synchronization
 socket.on('init_state', (serverState) => {
     currentState = serverState;
     renderAll();
@@ -22,15 +24,27 @@ socket.on('state_update', (serverState) => {
 });
 
 function renderAll() {
+    renderSettings();
     renderCalls();
     renderUnits();
     renderBolos();
     renderCitizens();
+    renderRMSReports();
+    renderCourtCases();
     renderPenalCodes();
     renderPanicState();
 }
 
-// Panic Banner Handling
+function renderSettings() {
+    const brandSub = document.getElementById('server-brand-sub');
+    if (brandSub && currentState.settings) {
+        brandSub.textContent = currentState.settings.serverName;
+        document.getElementById('admin-server-name').value = currentState.settings.serverName;
+        document.getElementById('admin-cad-mode').value = currentState.settings.cadMode;
+        document.getElementById('admin-webhook').value = currentState.settings.dispatchAlertWebhook;
+    }
+}
+
 function renderPanicState() {
     const banner = document.getElementById('panic-banner');
     const span = document.getElementById('panic-unit-name');
@@ -51,24 +65,21 @@ function clearPanic() {
     socket.emit('clear_panic');
 }
 
-// User Identity Sync
 function updateUserIdentity() {
     const name = document.getElementById('global-unit-name').value;
     const dept = document.getElementById('global-dept-select').value;
     const status = document.getElementById('my-status-select').value;
-    const location = document.getElementById('unit-loc-input') ? document.getElementById('unit-loc-input').value : 'Main Street';
+    const location = document.getElementById('unit-loc-input') ? document.getElementById('unit-loc-input').value : 'Main Highway';
     
     socket.emit('update_status', { name, dept, status, location });
 }
 
-// Render Calls
 function renderCalls() {
     const list = document.getElementById('calls-list');
     const mdtList = document.getElementById('mdt-calls-ref');
     const countBadge = document.getElementById('active-calls-count');
 
     if (countBadge) countBadge.textContent = currentState.calls.length;
-
     if (!list) return;
 
     if (currentState.calls.length === 0) {
@@ -87,6 +98,10 @@ function renderCalls() {
             <div style="font-size: 12px; color: #9ca3af; margin-bottom: 8px;">
                 Assigned Units: ${call.units.length > 0 ? call.units.join(', ') : 'None'}
             </div>
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; background: #0b0f19; padding: 6px; border-radius: 4px;">
+                <strong>Dispatch Narrative:</strong><br>
+                ${call.narratives.map(n => `[${n.time}] ${n.text}`).join('<br>')}
+            </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="btn secondary" onclick="attachToCall(${call.id})">Attach Me</button>
                 <button class="btn secondary" onclick="detachFromCall(${call.id})">Detach Me</button>
@@ -99,7 +114,6 @@ function renderCalls() {
     if (mdtList) mdtList.innerHTML = htmlContent;
 }
 
-// Render Units
 function renderUnits() {
     const list = document.getElementById('units-list');
     const countBadge = document.getElementById('active-units-count');
@@ -113,13 +127,12 @@ function renderUnits() {
                 <span>${unit.name}</span>
                 <span style="color: #22c55e;">${unit.status}</span>
             </div>
-            <p><strong>Location:</strong> ${unit.location || 'Unknown'} | <strong>Dept:</strong> ${unit.dept}</p>
-            <small style="color: #64748b;">Notes: ${unit.notes || 'None'}</small>
+            <p><strong>Location:</strong> ${unit.location} | <strong>Dept:</strong> ${unit.dept}</p>
+            <small style="color: #64748b;">Notes: ${unit.notes}</small>
         </div>
     `).join('');
 }
 
-// Render BOLOs
 function renderBolos() {
     const list = document.getElementById('bolos-list');
     if (!list) return;
@@ -141,7 +154,6 @@ function renderBolos() {
     `).join('');
 }
 
-// Render Citizens
 function renderCitizens() {
     const list = document.getElementById('civilian-list');
     if (!list) return;
@@ -164,7 +176,52 @@ function renderCitizens() {
     `).join('');
 }
 
-// Render Penal Codes
+function renderRMSReports() {
+    const list = document.getElementById('rms-reports-list');
+    if (!list) return;
+
+    if (currentState.records.length === 0) {
+        list.innerHTML = `<p class="placeholder-text">No reports filed in RMS yet.</p>`;
+        return;
+    }
+
+    list.innerHTML = currentState.records.map(rec => `
+        <div class="card">
+            <div class="card-header">
+                <span>[${rec.type}] Subject: ${rec.subject}</span>
+                <span style="color: #38bdf8;">${rec.timestamp}</span>
+            </div>
+            <p><strong>Filed By:</strong> ${rec.officer}</p>
+            <p><strong>Details:</strong> ${rec.narrative}</p>
+        </div>
+    `).join('');
+}
+
+function renderCourtCases() {
+    const list = document.getElementById('court-cases-list');
+    if (!list) return;
+
+    if (currentState.courtCases.length === 0) {
+        list.innerHTML = `<p class="placeholder-text">No active court dockets.</p>`;
+        return;
+    }
+
+    list.innerHTML = currentState.courtCases.map(c => `
+        <div class="card">
+            <div class="card-header">
+                <span>Defendant: ${c.defendant}</span>
+                <span style="color: #38bdf8;">${c.status}</span>
+            </div>
+            <p><strong>Charges:</strong> ${c.charge}</p>
+            <p><strong>Judge:</strong> ${c.judge} | <strong>Sentence:</strong> ${c.sentence}</p>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <button class="btn primary" onclick="updateCourtStatus(${c.id}, 'Guilty / Sentenced', '30 Days Jail')">Guilty Verdict</button>
+                <button class="btn secondary" onclick="updateCourtStatus(${c.id}, 'Not Guilty / Acquitted', 'Released')">Acquit</button>
+            </div>
+        </div>
+    `).join('');
+}
+
 function renderPenalCodes() {
     const list = document.getElementById('penal-code-list');
     if (!list) return;
@@ -179,7 +236,6 @@ function renderPenalCodes() {
     `).join('');
 }
 
-// Tab Switching
 function switchTab(tabId) {
     document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -188,7 +244,6 @@ function switchTab(tabId) {
     event.currentTarget.classList.add('active');
 }
 
-// Modals
 function openModal(modalId) {
     document.getElementById(modalId).style.display = 'flex';
 }
@@ -197,7 +252,6 @@ function closeModals() {
     document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
 }
 
-// Actions
 function submitStatusChange() {
     const status = document.getElementById('my-status-select').value;
     const name = document.getElementById('global-unit-name').value;
@@ -224,7 +278,7 @@ function submitNewCall() {
     const description = document.getElementById('call-desc').value;
 
     if (!location || !description) {
-        alert('Please fill in the location and description.');
+        alert('Please fill in location and description.');
         return;
     }
 
@@ -246,6 +300,22 @@ function closeCall(callId) {
     socket.emit('close_call', callId);
 }
 
+function submitRMSReport() {
+    const type = document.getElementById('rms-type').value;
+    const subject = document.getElementById('rms-subject').value;
+    const officer = document.getElementById('rms-officer').value;
+    const narrative = document.getElementById('rms-narrative').value;
+
+    if (!subject || !narrative) {
+        alert('Please fill in subject and narrative.');
+        return;
+    }
+
+    socket.emit('submit_rms_report', { type, subject, officer, narrative });
+    closeModals();
+    alert('RMS Report filed successfully!');
+}
+
 function submitNewBolo() {
     const type = document.getElementById('bolo-type').value;
     const title = document.getElementById('bolo-title').value;
@@ -253,7 +323,7 @@ function submitNewBolo() {
     const description = document.getElementById('bolo-desc').value;
 
     if (!title || !description) {
-        alert('Please fill out the BOLO title and description.');
+        alert('Please fill out BOLO details.');
         return;
     }
 
@@ -273,7 +343,7 @@ function submitCivilianPersona() {
     const weapons = document.getElementById('civ-weapons').value;
 
     if (!name || !address) {
-        alert('Please provide a name and address.');
+        alert('Please provide name and address.');
         return;
     }
 
@@ -287,10 +357,36 @@ function submitCivilianPersona() {
         weapons: [weapons]
     });
     closeModals();
-    alert('Civilian persona successfully registered in DMV database!');
+    alert('Civilian persona registered!');
 }
 
-// Database Query Lookup
+function submitCourtCase() {
+    const defendant = document.getElementById('court-defendant').value;
+    const charge = document.getElementById('court-charge').value;
+    const judge = document.getElementById('court-judge').value;
+
+    if (!defendant || !charge) {
+        alert('Please fill in defendant and charges.');
+        return;
+    }
+
+    socket.emit('add_court_case', { defendant, charge, judge, status: 'Scheduled for Trial', sentence: 'Pending' });
+    closeModals();
+}
+
+function updateCourtStatus(caseId, status, sentence) {
+    socket.emit('update_court_status', { caseId, status, sentence });
+}
+
+function saveAdminSettings() {
+    const serverName = document.getElementById('admin-server-name').value;
+    const cadMode = document.getElementById('admin-cad-mode').value;
+    const dispatchAlertWebhook = document.getElementById('admin-webhook').value;
+
+    socket.emit('update_settings', { serverName, cadMode, dispatchAlertWebhook });
+    alert('Settings updated successfully!');
+}
+
 function runDatabaseQuery() {
     const query = document.getElementById('db-search-input').value.toLowerCase();
     const resultsBox = document.getElementById('db-results');
