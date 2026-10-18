@@ -13,9 +13,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let state = {
     settings: {
-        serverName: 'Liberty County Roleplay - SunnoPulse Edition',
+        serverName: process.env.SERVER_NAME || 'Liberty County Roleplay - SunnoPulse Edition',
         cadMode: 'Hybrid Strict',
-        erlcApiKey: ''
+        erlcApiKey: process.env.ERLC_API_KEY || ''
     },
     units: [
         { id: 1, name: '101 - Officer John', dept: 'LCSO', status: '10-8 Available', location: 'Main Highway', x: 25, y: 30, notes: 'Patrol Lead' },
@@ -45,15 +45,15 @@ let state = {
 
 // Polling ER:LC Official V2 API
 async function pollErlcApi() {
-    if (!state.settings.erlcApiKey) {
+    const apiKey = state.settings.erlcApiKey || process.env.ERLC_API_KEY;
+    if (!apiKey) {
         state.apiConnected = false;
         return;
     }
     
     try {
-        const headers = { 'server-key': state.settings.erlcApiKey };
+        const headers = { 'server-key': apiKey };
         
-        // Use official ER:LC V2 endpoints
         const res = await fetch('https://api.erlc.gg/v2/server?include=players,vehicles', { headers });
         
         if (res.ok) {
@@ -63,7 +63,6 @@ async function pollErlcApi() {
 
             if (data.players) {
                 state.erlcLivePlayers = data.players;
-                // Automatically update active units from live API players if they have callsigns
                 data.players.forEach(p => {
                     if (p.Callsign && p.Team) {
                         let existing = state.units.find(u => u.name.includes(p.Callsign) || u.name.includes(p.Player.split(':')[0]));
@@ -99,6 +98,8 @@ async function pollErlcApi() {
     }
 }
 
+// Initial poll check if env var is present
+pollErlcApi();
 setInterval(pollErlcApi, 5000);
 
 io.on('connection', (socket) => {
@@ -107,7 +108,7 @@ io.on('connection', (socket) => {
 
     socket.on('update_settings', (newSettings) => {
         state.settings = { ...state.settings, ...newSettings };
-        pollErlcApi(); // Test immediately on save
+        pollErlcApi();
         io.emit('state_update', state);
     });
 
