@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulseCAD - Complete ER:LC Dispatch, MDT, Court & Civilian Suite</title>
+    <title>SunnoPulse CAD - Ultimate ER:LC Hybrid Dispatch & Live Map</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
@@ -19,23 +19,22 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
-                <h2>PULSE<span>CAD</span></h2>
-                <p id="server-brand-sub">ER:LC Official Suite</p>
+                <h2>SUNNO<span>PULSE</span></h2>
+                <p id="server-brand-sub">ER:LC Hybrid CAD</p>
             </div>
             <nav class="nav-links">
                 <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dispatch Dashboard</button>
+                <button class="nav-btn" onclick="switchTab('map')">🗺️ ER:LC Live Map</button>
                 <button class="nav-btn" onclick="switchTab('mdt')">💻 Mobile Data Terminal</button>
-                <button class="nav-btn" onclick="switchTab('rms')">📋 RMS & Reports</button>
                 <button class="nav-btn" onclick="switchTab('civilian')">👤 Civilian Portal</button>
                 <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLOs & Wanted</button>
-                <button class="nav-btn" onclick="switchTab('court')">⚖️ DOJ Court Dockets</button>
                 <button class="nav-btn" onclick="switchTab('penalcode')">📖 Penal Code & 10-Codes</button>
-                <button class="nav-btn" onclick="switchTab('admin')">⚙️ Admin Control Panel</button>
+                <button class="nav-btn" onclick="switchTab('admin')">⚙️ ER:LC API Settings</button>
             </nav>
             <div class="user-panel">
-                <span id="user-status-dot" class="status-indicator online"></span>
+                <span class="status-indicator online"></span>
                 <div class="user-info">
-                    <input type="text" id="global-unit-name" value="101 - Officer John" onchange="updateUserIdentity()" title="Callsign / Name">
+                    <input type="text" id="global-unit-name" value="101 - Officer John" onchange="updateUserIdentity()">
                     <select id="global-dept-select" onchange="updateUserIdentity()">
                         <option value="LCSO">LCSO (Sheriff)</option>
                         <option value="RCPD">RCPD (Police)</option>
@@ -56,7 +55,7 @@
                 <header class="content-header">
                     <div>
                         <h1>Live Dispatch Center</h1>
-                        <p class="subtitle">Liberty County Emergency Operations & Unit Tracking</p>
+                        <p class="subtitle">SunnoPulse Hybrid Dispatch & Incident Control</p>
                     </div>
                     <div class="header-actions">
                         <button class="btn danger" onclick="triggerPanicButton()">🚨 PANIC BUTTON</button>
@@ -83,12 +82,37 @@
                 </div>
             </section>
 
-            <!-- TAB 2: Mobile Data Terminal (MDT) -->
+            <!-- TAB 2: ER:LC Live Map -->
+            <section id="tab-map" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>ER:LC Live Map & API Radar</h1>
+                        <p class="subtitle">Real-time unit tracking linked via ER:LC API Key</p>
+                    </div>
+                    <button class="btn primary" onclick="pingMapLocation()">📍 Update My GPS Coordinate</button>
+                </header>
+
+                <div class="panel" style="position: relative; height: 650px; background: #080c14; border: 1px solid #1f2937; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div id="map-canvas" style="width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #111827 0%, #0b0f19 100%); background-image: linear-gradient(to right, #1f2937 1px, transparent 1px), linear-gradient(to bottom, #1f2937 1px, transparent 1px); background-size: 50px 50px;">
+                        
+                        <div style="position: absolute; top: 20%; left: 30%; color: #64748b; font-size: 12px; font-weight: 600;">🏦 Liberty County Bank</div>
+                        <div style="position: absolute; top: 60%; left: 70%; color: #64748b; font-size: 12px; font-weight: 600;">⛽ Gas Station / Highway 10</div>
+                        <div style="position: absolute; top: 40%; left: 50%; color: #64748b; font-size: 12px; font-weight: 600;">🏬 Downtown Spawn</div>
+
+                        <div id="map-markers-container"></div>
+                    </div>
+                    <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(17, 24, 39, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #9ca3af; border: 1px solid #374151;">
+                        🟢 Active Units GPS Link | 🔴 API Status: <span id="api-status-text" style="color: #ef4444;">Not Connected (Add API Key in Settings)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: MDT -->
             <section id="tab-mdt" class="tab-pane">
                 <header class="content-header">
                     <div>
                         <h1>Mobile Data Terminal (MDT)</h1>
-                        <p class="subtitle">In-Vehicle Law Enforcement & EMS Terminal</p>
+                        <p class="subtitle">Database Search & Unit Status Manager</p>
                     </div>
                     <div class="mdt-status-changer">
                         <label>Active Status:</label>
@@ -98,58 +122,32 @@
                             <option value="10-6 Busy">10-6 Busy</option>
                             <option value="10-97 On Scene">10-97 On Scene</option>
                             <option value="10-41 On Duty">10-41 On Duty</option>
-                            <option value="10-42 Off Duty">10-42 Off Duty</option>
                         </select>
                     </div>
                 </header>
 
                 <div class="mdt-grid">
                     <div class="panel query-panel">
-                        <h3>NLETS / DMV Database Lookup</h3>
+                        <h3>DMV & Warrant Search</h3>
                         <div class="search-box">
-                            <input type="text" id="db-search-input" placeholder="Search name, license plate (e.g. ERLC-992), or DOB...">
-                            <button class="btn primary" onclick="runDatabaseQuery()">Run Query</button>
+                            <input type="text" id="db-search-input" placeholder="Search civilian name or plate (e.g. ERLC-992)...">
+                            <button class="btn primary" onclick="runDatabaseQuery()">Search Records</button>
                         </div>
                         <div id="db-results" class="results-box">
-                            <p class="placeholder-text">Enter a civilian name or vehicle plate to view driver's license, active warrants, firearms permits, and registered property.</p>
+                            <p class="placeholder-text">Enter a name or plate to search citizen files.</p>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <h3>Unit Status & Location Update</h3>
+                        <h3>Unit GPS & Status Update</h3>
                         <div class="quick-actions">
                             <div class="form-group">
-                                <label>Current Location / Street / Postal</label>
-                                <input type="text" id="unit-loc-input" placeholder="e.g. Bank Blvd (Postal 104)">
+                                <label>Location / Street</label>
+                                <input type="text" id="unit-loc-input" placeholder="e.g. Bank Blvd">
                             </div>
-                            <div class="form-group">
-                                <label>Unit Notes / Assignment</label>
-                                <input type="text" id="unit-notes-input" placeholder="e.g. Traffic Patrol / Sector 2">
-                            </div>
-                            <button class="btn primary full" onclick="submitFullUnitUpdate()">Update MDT Status & Location</button>
-                        </div>
-
-                        <div style="margin-top: 20px;">
-                            <h3>Active Calls Quick-View</h3>
-                            <div id="mdt-calls-ref" class="card-list" style="max-height: 180px;"></div>
+                            <button class="btn primary full" onclick="submitFullUnitUpdate()">Broadcast Status & GPS</button>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- TAB 3: RMS & Reports -->
-            <section id="tab-rms" class="tab-pane">
-                <header class="content-header">
-                    <div>
-                        <h1>Records Management System (RMS)</h1>
-                        <p class="subtitle">Issue Citations, Warnings, Field Interviews, and Arrest Reports</p>
-                    </div>
-                    <button class="btn primary" onclick="openModal('rms-modal')">+ Create New Report</button>
-                </header>
-
-                <div class="panel">
-                    <h3>Filed Department Reports & Citations</h3>
-                    <div id="rms-reports-list" class="card-list"></div>
                 </div>
             </section>
 
@@ -157,216 +155,95 @@
             <section id="tab-civilian" class="tab-pane">
                 <header class="content-header">
                     <div>
-                        <h1>Civilian Persona Portal</h1>
-                        <p class="subtitle">Manage your ER:LC civilian characters, vehicles, and registered weapons</p>
+                        <h1>Civilian Portal</h1>
+                        <p class="subtitle">Manage characters and vehicles</p>
                     </div>
                     <button class="btn primary" onclick="openModal('civ-modal')">+ Create Civilian Persona</button>
                 </header>
-
                 <div class="panel">
-                    <h3>Registered Citizens in Liberty County</h3>
+                    <h3>Registered Citizens</h3>
                     <div id="civilian-list" class="card-list"></div>
                 </div>
             </section>
 
-            <!-- TAB 5: BOLOs & Wanted Board -->
+            <!-- TAB 5: BOLOs -->
             <section id="tab-bolos" class="tab-pane">
                 <header class="content-header">
                     <div>
-                        <h1>BOLO & Wanted Board</h1>
-                        <p class="subtitle">Active BOLO notices broadcasted across all department terminals</p>
+                        <h1>BOLOs & Wanted Board</h1>
+                        <p class="subtitle">Active alerts</p>
                     </div>
                     <button class="btn primary" onclick="openModal('bolo-modal')">+ Post New BOLO</button>
                 </header>
-
                 <div class="panel">
                     <div id="bolos-list" class="card-list"></div>
                 </div>
             </section>
 
-            <!-- TAB 6: DOJ Court Dockets -->
-            <section id="tab-court" class="tab-pane">
-                <header class="content-header">
-                    <div>
-                        <h1>Department of Justice (DOJ) Court Dockets</h1>
-                        <p class="subtitle">Active criminal cases, trials, warrants, and judge sentencing</p>
-                    </div>
-                    <button class="btn primary" onclick="openModal('court-modal')">+ File Court Case</button>
-                </header>
-
-                <div class="panel">
-                    <h3>Pending & Closed Court Cases</h3>
-                    <div id="court-cases-list" class="card-list"></div>
-                </div>
-            </section>
-
-            <!-- TAB 7: Penal Code & 10-Codes -->
+            <!-- TAB 6: Penal Code -->
             <section id="tab-penalcode" class="tab-pane">
                 <header class="content-header">
                     <div>
-                        <h1>Liberty County Penal Code & 10-Codes</h1>
-                        <p class="subtitle">Standard radio codes and state laws for ER:LC roleplay</p>
+                        <h1>Penal Code & 10-Codes</h1>
                     </div>
                 </header>
-
-                <div class="dashboard-grid">
-                    <div class="panel">
-                        <h3>Radio 10-Codes</h3>
-                        <ul class="code-list">
-                            <li><strong>10-4:</strong> Acknowledgement / Affirmative</li>
-                            <li><strong>10-8:</strong> In Service / Available</li>
-                            <li><strong>10-7:</strong> Out of Service</li>
-                            <li><strong>10-6:</strong> Busy / Tied Up</li>
-                            <li><strong>10-97:</strong> Arrived at Scene</li>
-                            <li><strong>10-41:</strong> Beginning Tour of Duty</li>
-                            <li><strong>10-42:</strong> Ending Tour of Duty</li>
-                            <li><strong>10-10:</strong> Fight / Robbery in Progress</li>
-                            <li><strong>10-31:</strong> Crime in Progress</li>
-                            <li><strong>10-50:</strong> Motor Vehicle Accident</li>
-                        </ul>
-                    </div>
-
-                    <div class="panel">
-                        <h3>Penal Code Library</h3>
-                        <div id="penal-code-list" class="card-list"></div>
-                    </div>
+                <div class="panel">
+                    <div id="penal-code-list" class="card-list"></div>
                 </div>
             </section>
 
-            <!-- TAB 8: Admin Control Panel -->
+            <!-- TAB 7: Admin & ER:LC API Key Config -->
             <section id="tab-admin" class="tab-pane">
                 <header class="content-header">
                     <div>
-                        <h1>Community Admin Panel</h1>
-                        <p class="subtitle">Configure PulseCAD server name, CAD mode, and webhooks</p>
+                        <h1>SunnoPulse ER:LC API Configuration</h1>
+                        <p class="subtitle">Link your ER:LC private server API key for real-time map tracking</p>
                     </div>
                 </header>
 
                 <div class="panel" style="max-width: 600px;">
-                    <h3>Server Configuration Settings</h3>
-                    <div class="form-group" style="margin-top: 16px;">
-                        <label>Server Community Name</label>
-                        <input type="text" id="admin-server-name" placeholder="e.g. Liberty County Roleplay">
+                    <h3>ER:LC Server API Key Setup</h3>
+                    <p style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
+                        To enable live ER:LC map tracking and player synchronization, obtain your API key from your ER:LC server bot/provider and paste it below.
+                    </p>
+                    <div class="form-group">
+                        <label>ER:LC API Server Key</label>
+                        <input type="password" id="api-key-input" placeholder="Enter your ER:LC API key...">
                     </div>
                     <div class="form-group">
-                        <label>CAD Operating Mode</label>
-                        <select id="admin-cad-mode">
-                            <option value="Strict RP">Strict Roleplay</option>
-                            <option value="Normal Public">Normal Public Server</option>
-                            <option value="Training Server">Training Server</option>
-                        </select>
+                        <label>Community Server Name</label>
+                        <input type="text" id="admin-server-name" value="Liberty County Roleplay">
                     </div>
-                    <div class="form-group">
-                        <label>Discord Webhook URL (For 911 Alerts)</label>
-                        <input type="text" id="admin-webhook" placeholder="https://discord.com/api/webhooks/...">
-                    </div>
-                    <button class="btn primary" onclick="saveAdminSettings()">Save Configuration</button>
+                    <button class="btn primary" onclick="saveApiKeySettings()">Save & Connect API</button>
                 </div>
             </section>
 
         </main>
     </div>
 
-    <!-- MODALS -->
-
-    <!-- New Call Modal -->
+    <!-- Modals -->
     <div id="call-modal" class="modal">
         <div class="modal-content">
             <h3>Dispatch New 911 Call</h3>
             <div class="form-group">
                 <label>Call Type / Code</label>
-                <input type="text" id="call-type" placeholder="e.g. 10-10 Bank Robbery, 10-50 Accident">
+                <input type="text" id="call-type" placeholder="e.g. 10-10 Robbery">
             </div>
             <div class="form-group">
-                <label>Priority Level</label>
-                <select id="call-priority">
-                    <option value="Normal">Normal Priority</option>
-                    <option value="High">High Priority / Urgent</option>
-                    <option value="Code 3">Code 3 (Emergency Lights & Sirens)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Location & Street</label>
+                <label>Location</label>
                 <input type="text" id="call-location" placeholder="e.g. Bank Blvd">
             </div>
             <div class="form-group">
-                <label>Postal Number</label>
-                <input type="text" id="call-postal" placeholder="e.g. 104">
-            </div>
-            <div class="form-group">
-                <label>Description / Details</label>
-                <textarea id="call-desc" placeholder="Details of the emergency call..."></textarea>
+                <label>Description</label>
+                <textarea id="call-desc" placeholder="Incident details..."></textarea>
             </div>
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn primary" onclick="submitNewCall()">Dispatch Call</button>
+                <button class="btn primary" onclick="submitNewCall()">Dispatch</button>
             </div>
         </div>
     </div>
 
-    <!-- RMS Report Modal -->
-    <div id="rms-modal" class="modal">
-        <div class="modal-content">
-            <h3>Create Law Enforcement Report / Citation</h3>
-            <div class="form-group">
-                <label>Report Type</label>
-                <select id="rms-type">
-                    <option value="Citation / Ticket">Citation / Ticket</option>
-                    <option value="Written Warning">Written Warning</option>
-                    <option value="Arrest Report">Arrest Report</option>
-                    <option value="Field Interview">Field Interview (FI)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Subject / Suspect Name</label>
-                <input type="text" id="rms-subject" placeholder="e.g. Jane Smith">
-            </div>
-            <div class="form-group">
-                <label>Officer / Unit Filing</label>
-                <input type="text" id="rms-officer" value="101 - Officer John">
-            </div>
-            <div class="form-group">
-                <label>Violations / Charges / Summary</label>
-                <textarea id="rms-narrative" placeholder="Describe the offense, fine amount, or investigation details..."></textarea>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn primary" onclick="submitRMSReport()">File Report to RMS</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create BOLO Modal -->
-    <div id="bolo-modal" class="modal">
-        <div class="modal-content">
-            <h3>Create BOLO Notice</h3>
-            <div class="form-group">
-                <label>BOLO Type</label>
-                <select id="bolo-type">
-                    <option value="Vehicle">Vehicle</option>
-                    <option value="Person">Person / Suspect</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Title / Headline</label>
-                <input type="text" id="bolo-title" placeholder="e.g. Armed Robbery Suspect Vehicle">
-            </div>
-            <div class="form-group">
-                <label>License Plate (If Vehicle)</label>
-                <input type="text" id="bolo-plate" placeholder="e.g. ERLC-992">
-            </div>
-            <div class="form-group">
-                <label>Description / Details</label>
-                <textarea id="bolo-desc" placeholder="Physical description, direction of travel, weapons involved..."></textarea>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn primary" onclick="submitNewBolo()">Broadcast BOLO</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Civilian Modal -->
     <div id="civ-modal" class="modal">
         <div class="modal-content">
             <h3>Create Civilian Persona</h3>
@@ -375,47 +252,36 @@
                 <input type="text" id="civ-name" placeholder="e.g. Michael Vance">
             </div>
             <div class="form-group">
-                <label>Date of Birth</label>
+                <label>DOB</label>
                 <input type="date" id="civ-dob" value="2000-01-01">
             </div>
             <div class="form-group">
-                <label>Address</label>
-                <input type="text" id="civ-address" placeholder="e.g. 402 Pine Street">
-            </div>
-            <div class="form-group">
-                <label>Registered Vehicle</label>
-                <input type="text" id="civ-vehicle" placeholder="e.g. Sports Car (ERLC-331)">
-            </div>
-            <div class="form-group">
-                <label>Registered Weapons</label>
-                <input type="text" id="civ-weapons" placeholder="e.g. None or CCW Permit">
+                <label>Address & Vehicle</label>
+                <input type="text" id="civ-address" placeholder="402 Pine St">
+                <input type="text" id="civ-vehicle" placeholder="Sedan (ERLC-992)" style="margin-top: 8px;">
             </div>
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn primary" onclick="submitCivilianPersona()">Create Persona</button>
+                <button class="btn primary" onclick="submitCivilianPersona()">Create</button>
             </div>
         </div>
     </div>
 
-    <!-- Court Docket Modal -->
-    <div id="court-modal" class="modal">
+    <div id="bolo-modal" class="modal">
         <div class="modal-content">
-            <h3>File DOJ Court Case</h3>
+            <h3>Create BOLO</h3>
             <div class="form-group">
-                <label>Defendant Name</label>
-                <input type="text" id="court-defendant" placeholder="e.g. Jane Smith">
+                <label>Title & Plate</label>
+                <input type="text" id="bolo-title" placeholder="Armed Robbery Vehicle">
+                <input type="text" id="bolo-plate" placeholder="ERLC-992" style="margin-top: 8px;">
             </div>
             <div class="form-group">
-                <label>Charges Filed</label>
-                <input type="text" id="court-charge" placeholder="e.g. Felony Evasion & Grand Theft">
-            </div>
-            <div class="form-group">
-                <label>Assigned Judge</label>
-                <input type="text" id="court-judge" placeholder="e.g. Judge Miller">
+                <label>Description</label>
+                <textarea id="bolo-desc" placeholder="Details..."></textarea>
             </div>
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
-                <button class="btn primary" onclick="submitCourtCase()">File Case Docket</button>
+                <button class="btn primary" onclick="submitNewBolo()">Post BOLO</button>
             </div>
         </div>
     </div>

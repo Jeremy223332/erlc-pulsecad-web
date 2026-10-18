@@ -314,50 +314,20 @@ body {
     height: 80px;
 }
 
-/* MDT & Search */
-.search-box {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.search-box input {
-    flex-grow: 1;
-    padding: 10px;
-    background-color: #0b0f19;
-    border: 1px solid #374151;
-    border-radius: 6px;
+/* Map Pin Marker */
+.map-marker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: #1e293b;
+    border: 2px solid #38bdf8;
     color: #f1f5f9;
-}
-
-.results-box {
-    background-color: #0b0f19;
-    border: 1px solid #374151;
-    border-radius: 8px;
-    padding: 16px;
-    min-height: 220px;
-}
-
-.placeholder-text {
-    color: #64748b;
-    font-style: italic;
-    text-align: center;
-    margin-top: 60px;
-}
-
-.code-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-size: 13px;
-    color: #9ca3af;
-}
-
-.code-list li strong {
-    color: #38bdf8;
-    width: 70px;
-    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+    white-space: nowrap;
 }
 
 /* Modal */

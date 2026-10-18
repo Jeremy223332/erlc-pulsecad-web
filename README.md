@@ -1,26 +1,9 @@
-# ER:LC PulseCAD Web
+# SunnoPulse Hybrid CAD (ERLC Edition)
 
-A lightweight, open-source browser-based CAD/MDT web application tailored for **Emergency Response: Liberty County (ER:LC)** private servers on Roblox. Built with **Node.js**, **Express**, and **Socket.io** for real-time dispatch updates.
+A custom hybrid Computer-Aided Dispatch (CAD) suite combining the best features of **SunnoCAD** and **PulseCAD**, featuring a real-time **ER:LC V1 API** live map integration for Roblox private servers.
 
 ## Features
-- **Live Dispatch Dashboard:** Create, track, and clear 911 calls in real-time across connected officers.
-- **Active Unit Statuses:** Monitor unit availability (10-8, 10-97, 10-7) and locations.
-- **Mobile Data Terminal (MDT):** Search database records for citizen names, licenses, warrants, and registered vehicles.
-- **BOLOs & Wanted Board:** Post and review community BOLOs.
-
-## Getting Started
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Run the server:
-   ```bash
-   npm start
-   ```
-
-3. Open your browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+- **ER:LC Live Map Radar:** Connects directly via your ER:LC V1 Server API key to track officers and vehicles in real-time across Liberty County.
+- **Dispatch Center & Panic Button:** Instant 911 calls, unit attachments, and broadcasted panic alerts.
+- **Mobile Data Terminal (MDT):** DMV lookups, warrants, and 10-code statuses.
+- **Civilian Portal & BOLOs:** Character registration and wanted boards.
