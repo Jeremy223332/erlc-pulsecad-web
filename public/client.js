@@ -9,7 +9,10 @@ let currentState = {
     penalCode: [],
     panicButtonActive: false,
     panicUnit: null,
-    erlcLivePlayers: []
+    erlcLivePlayers: [],
+    erlcLiveVehicles: [],
+    apiConnected: false,
+    apiError: null
 };
 
 socket.on('init_state', (serverState) => {
@@ -39,8 +42,30 @@ function renderSettings() {
         brandSub.textContent = currentState.settings.serverName;
         document.getElementById('admin-server-name').value = currentState.settings.serverName;
         if (currentState.settings.erlcApiKey) {
-            document.getElementById('api-status-text').textContent = 'Connected & Polling ER:LC API V1';
-            document.getElementById('api-status-text').style.color = '#22c55e';
+            document.getElementById('api-key-input').value = currentState.settings.erlcApiKey;
+        }
+    }
+
+    const apiStatus = document.getElementById('api-status-text');
+    const debugMsg = document.getElementById('api-debug-msg');
+
+    if (currentState.apiConnected) {
+        if (apiStatus) {
+            apiStatus.textContent = `Connected (Live Players: ${currentState.erlcLivePlayers.length}, Vehicles: ${currentState.erlcLiveVehicles.length})`;
+            apiStatus.style.color = '#22c55e';
+        }
+        if (debugMsg) {
+            debugMsg.textContent = `Success! Connected to ER:LC V2 API. Tracking ${currentState.erlcLivePlayers.length} online players.`;
+            debugMsg.style.color = '#22c55e';
+        }
+    } else {
+        if (apiStatus) {
+            apiStatus.textContent = currentState.apiError ? currentState.apiError : 'Not Connected';
+            apiStatus.style.color = '#ef4444';
+        }
+        if (debugMsg && currentState.apiError) {
+            debugMsg.textContent = currentState.apiError;
+            debugMsg.style.color = '#ef4444';
         }
     }
 }
@@ -113,6 +138,7 @@ function renderUnits() {
                 <span style="color: #22c55e;">${unit.status}</span>
             </div>
             <p><strong>Loc:</strong> ${unit.location} | <strong>Dept:</strong> ${unit.dept}</p>
+            <small style="color: #64748b;">${unit.notes || ''}</small>
         </div>
     `).join('');
 }
@@ -238,7 +264,7 @@ function saveApiKeySettings() {
     const erlcApiKey = document.getElementById('api-key-input').value;
     const serverName = document.getElementById('admin-server-name').value;
     socket.emit('update_settings', { erlcApiKey, serverName });
-    alert('ER:LC API Key saved and connected!');
+    alert('ER:LC API Key saved! Checking connection...');
 }
 
 function runDatabaseQuery() {

@@ -87,7 +87,7 @@
                 <header class="content-header">
                     <div>
                         <h1>ER:LC Live Map & API Radar</h1>
-                        <p class="subtitle">Real-time unit tracking linked via ER:LC API Key</p>
+                        <p class="subtitle">Real-time unit tracking linked via ER:LC V2 API Key</p>
                     </div>
                     <button class="btn primary" onclick="pingMapLocation()">📍 Update My GPS Coordinate</button>
                 </header>
@@ -102,7 +102,7 @@
                         <div id="map-markers-container"></div>
                     </div>
                     <div style="position: absolute; bottom: 12px; left: 16px; background: rgba(17, 24, 39, 0.9); padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #9ca3af; border: 1px solid #374151;">
-                        🟢 Active Units GPS Link | 🔴 API Status: <span id="api-status-text" style="color: #ef4444;">Not Connected (Add API Key in Settings)</span>
+                        🟢 Active Units GPS Link | API Status: <span id="api-status-text" style="color: #ef4444;">Not Connected (Add API Key in Settings)</span>
                     </div>
                 </div>
             </section>
@@ -202,9 +202,9 @@
                 </header>
 
                 <div class="panel" style="max-width: 600px;">
-                    <h3>ER:LC Server API Key Setup</h3>
+                    <h3>ER:LC Server API Key Setup (V2 Endpoint)</h3>
                     <p style="font-size: 12px; color: #9ca3af; margin-bottom: 16px;">
-                        To enable live ER:LC map tracking and player synchronization, obtain your API key from your ER:LC server bot/provider and paste it below.
+                        Paste your ER:LC server key below. The backend queries <code>https://api.erlc.gg/v2/server?include=players,vehicles</code> automatically.
                     </p>
                     <div class="form-group">
                         <label>ER:LC API Server Key</label>
@@ -215,6 +215,7 @@
                         <input type="text" id="admin-server-name" value="Liberty County Roleplay">
                     </div>
                     <button class="btn primary" onclick="saveApiKeySettings()">Save & Connect API</button>
+                    <div id="api-debug-msg" style="margin-top: 12px; font-size: 13px; color: #38bdf8;"></div>
                 </div>
             </section>
 

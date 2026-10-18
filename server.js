@@ -38,29 +38,64 @@ let state = {
     panicButtonActive: false,
     panicUnit: null,
     erlcLivePlayers: [],
-    erlcLiveVehicles: []
+    erlcLiveVehicles: [],
+    apiConnected: false,
+    apiError: null
 };
 
-// Polling ER:LC V1 API when API key is provided
+// Polling ER:LC Official V2 API
 async function pollErlcApi() {
-    if (!state.settings.erlcApiKey) return;
+    if (!state.settings.erlcApiKey) {
+        state.apiConnected = false;
+        return;
+    }
     
     try {
         const headers = { 'server-key': state.settings.erlcApiKey };
         
-        const playerRes = await fetch('https://api.policeroleplaycommunity.com/v1/server/players', { headers });
-        if (playerRes.ok) {
-            state.erlcLivePlayers = await playerRes.json();
-        }
+        // Use official ER:LC V2 endpoints
+        const res = await fetch('https://api.erlc.gg/v2/server?include=players,vehicles', { headers });
+        
+        if (res.ok) {
+            const data = await res.json();
+            state.apiConnected = true;
+            state.apiError = null;
 
-        const vehRes = await fetch('https://api.policeroleplaycommunity.com/v1/server/vehicles', { headers });
-        if (vehRes.ok) {
-            state.erlcLiveVehicles = await vehRes.json();
+            if (data.players) {
+                state.erlcLivePlayers = data.players;
+                // Automatically update active units from live API players if they have callsigns
+                data.players.forEach(p => {
+                    if (p.Callsign && p.Team) {
+                        let existing = state.units.find(u => u.name.includes(p.Callsign) || u.name.includes(p.Player.split(':')[0]));
+                        if (!existing) {
+                            state.units.push({
+                                id: p.Player,
+                                name: `${p.Callsign} - ${p.Player.split(':')[0]}`,
+                                dept: p.Team.includes('Sheriff') ? 'LCSO' : p.Team.includes('Police') ? 'RCPD' : p.Team.includes('Fire') ? 'RCFR' : 'CIV',
+                                status: '10-8 Available',
+                                location: 'Liberty County',
+                                x: Math.floor(Math.random() * 60) + 20,
+                                y: Math.floor(Math.random() * 60) + 20,
+                                notes: `API Connected (${p.Permission})`
+                            });
+                        }
+                    }
+                });
+            }
+
+            if (data.vehicles) {
+                state.erlcLiveVehicles = data.vehicles;
+            }
+        } else {
+            state.apiConnected = false;
+            state.apiError = `API Error: HTTP ${res.status} - Check if your Server Key is correct.`;
         }
 
         io.emit('state_update', state);
     } catch (err) {
-        console.error('ER:LC API Polling error:', err.message);
+        state.apiConnected = false;
+        state.apiError = `Connection Error: ${err.message}`;
+        io.emit('state_update', state);
     }
 }
 
@@ -72,6 +107,7 @@ io.on('connection', (socket) => {
 
     socket.on('update_settings', (newSettings) => {
         state.settings = { ...state.settings, ...newSettings };
+        pollErlcApi(); // Test immediately on save
         io.emit('state_update', state);
     });
 
