@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PulseCAD - ER:LC Dispatch & MDT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h2>PULSE<span>CAD</span></h2>
+                <p>ER:LC Private Server Edition</p>
+            </div>
+            <nav class="nav-links">
+                <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dispatch Live Feed</button>
+                <button class="nav-btn" onclick="switchTab('mdt')">💻 Mobile Data Terminal</button>
+                <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLOs & Records</button>
+            </nav>
+            <div class="user-panel">
+                <span id="user-status-badge" class="status-indicator online"></span>
+                <div>
+                    <strong id="current-user-display">Officer Dispatch</strong>
+                    <small>Department: LCSO</small>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- TAB 1: Dispatch Dashboard -->
+            <section id="tab-dashboard" class="tab-pane active">
+                <header class="content-header">
+                    <h1>Active Dispatch Dashboard</h1>
+                    <button class="btn primary" onclick="openNewCallModal()">+ New 911 Call</button>
+                </header>
+
+                <div class="dashboard-grid">
+                    <!-- Active Calls Column -->
+                    <div class="panel">
+                        <h3>Active Calls / Incidents</h3>
+                        <div id="calls-list" class="card-list">
+                            <!-- Populated via Socket.io -->
+                        </div>
+                    </div>
+
+                    <!-- Active Units Column -->
+                    <div class="panel">
+                        <h3>Active Units & Status</h3>
+                        <div id="units-list" class="card-list">
+                            <!-- Populated via Socket.io -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Mobile Data Terminal (MDT) -->
+            <section id="tab-mdt" class="tab-pane">
+                <header class="content-header">
+                    <h1>Mobile Data Terminal (MDT)</h1>
+                    <div class="mdt-status-changer">
+                        <label>My Status:</label>
+                        <select id="my-status-select" onchange="updateMyStatus()">
+                            <option value="10-8 Available">10-8 Available</option>
+                            <option value="10-7 Out of Service">10-7 Out of Service</option>
+                            <option value="10-6 Busy">10-6 Busy</option>
+                            <option value="10-97 On Scene">10-97 On Scene</option>
+                            <option value="10-41 On Duty">10-41 On Duty</option>
+                        </select>
+                    </div>
+                </header>
+
+                <div class="mdt-grid">
+                    <div class="panel query-panel">
+                        <h3>Database Query</h3>
+                        <div class="search-box">
+                            <input type="text" id="db-search-input" placeholder="Search name or license plate (e.g. John Doe, ERLC-992)...">
+                            <button class="btn secondary" onclick="runDatabaseQuery()">Search Records</button>
+                        </div>
+                        <div id="db-results" class="results-box">
+                            <p class="placeholder-text">Enter a name or plate to search DMV and criminal records.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Quick Actions & Reports</h3>
+                        <div class="quick-actions">
+                            <div class="form-group">
+                                <label>Your Unit Identifier</label>
+                                <input type="text" id="unit-name-input" value="101 - John D.">
+                            </div>
+                            <div class="form-group">
+                                <label>Current Location</label>
+                                <input type="text" id="unit-loc-input" placeholder="e.g. Main Street / Gas Station">
+                            </div>
+                            <button class="btn primary full" onclick="submitStatusUpdate()">Update Unit Status & Location</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: BOLOs -->
+            <section id="tab-bolos" class="tab-pane">
+                <header class="content-header">
+                    <h1>BOLOs & Wanted Vehicles</h1>
+                    <button class="btn primary" onclick="openNewBoloModal()">+ Create BOLO</button>
+                </header>
+                <div class="panel">
+                    <div id="bolos-list" class="card-list">
+                        <!-- Populated via Socket.io -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="call-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create 911 / Dispatch Call</h3>
+            <div class="form-group">
+                <label>Call Type / Code</label>
+                <input type="text" id="call-type" placeholder="e.g. 10-10 Robbery, 10-50 Accident">
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" id="call-location" placeholder="e.g. Liberty County Bank">
+            </div>
+            <div class="form-group">
+                <label>Description / Details</label>
+                <textarea id="call-desc" placeholder="Details of the incident..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn primary" onclick="submitNewCall()">Dispatch Call</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="client.js"></script>
+</body>
+</html>
