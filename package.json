@@ -1,6 +1,6 @@
 {
   "name": "erlc-pulsecad-web",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Browser-based CAD/MDT web application for ER:LC private servers",
   "main": "server.js",
   "scripts": {
