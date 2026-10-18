@@ -3,57 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulseCAD - ER:LC Dispatch & MDT</title>
+    <title>PulseCAD - ER:LC Ultimate Dispatch & MDT Suite</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+    <!-- Panic Alert Overlay Banner -->
+    <div id="panic-banner" class="panic-banner hidden">
+        🚨 PANIC BUTTON ACTIVE: <span id="panic-unit-name">UNIT</span> REQUIRES IMMEDIATE ASSISTANCE! 🚨
+        <button class="btn danger-btn" onclick="clearPanic()">Clear Panic</button>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="brand">
                 <h2>PULSE<span>CAD</span></h2>
-                <p>ER:LC Private Server Edition</p>
+                <p>ER:LC Ultimate Edition</p>
             </div>
             <nav class="nav-links">
-                <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dispatch Live Feed</button>
+                <button class="nav-btn active" onclick="switchTab('dashboard')">📊 Dispatch Dashboard</button>
                 <button class="nav-btn" onclick="switchTab('mdt')">💻 Mobile Data Terminal</button>
-                <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLOs & Records</button>
+                <button class="nav-btn" onclick="switchTab('civilian')">👤 Civilian Portal</button>
+                <button class="nav-btn" onclick="switchTab('bolos')">🚨 BOLO & Wanted Board</button>
+                <button class="nav-btn" onclick="switchTab('penalcode')">📖 Penal Code & 10-Codes</button>
             </nav>
             <div class="user-panel">
-                <span id="user-status-badge" class="status-indicator online"></span>
-                <div>
-                    <strong id="current-user-display">Officer Dispatch</strong>
-                    <small>Department: LCSO</small>
+                <span id="user-status-dot" class="status-indicator online"></span>
+                <div class="user-info">
+                    <input type="text" id="global-unit-name" value="101 - Officer John" onchange="updateUserIdentity()">
+                    <select id="global-dept-select" onchange="updateUserIdentity()">
+                        <option value="LCSO">LCSO (Sheriff)</option>
+                        <option value="RCPD">RCPD (Police)</option>
+                        <option value="RCFR">RCFR (Fire/EMS)</option>
+                        <option value="TPS">TPS (State Patrol)</option>
+                        <option value="CIV">CIV (Civilian)</option>
+                    </select>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content Area -->
         <main class="main-content">
+            
             <!-- TAB 1: Dispatch Dashboard -->
             <section id="tab-dashboard" class="tab-pane active">
                 <header class="content-header">
-                    <h1>Active Dispatch Dashboard</h1>
-                    <button class="btn primary" onclick="openNewCallModal()">+ New 911 Call</button>
+                    <div>
+                        <h1>Live Dispatch Center</h1>
+                        <p class="subtitle">Liberty County Emergency Dispatch & Incident Management</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn danger" onclick="triggerPanicButton()">🚨 PANIC BUTTON</button>
+                        <button class="btn primary" onclick="openModal('call-modal')">+ New 911 Call</button>
+                    </div>
                 </header>
 
                 <div class="dashboard-grid">
-                    <!-- Active Calls Column -->
                     <div class="panel">
-                        <h3>Active Calls / Incidents</h3>
-                        <div id="calls-list" class="card-list">
-                            <!-- Populated via Socket.io -->
+                        <div class="panel-header">
+                            <h3>Active Incidents / 911 Calls</h3>
+                            <span id="active-calls-count" class="badge">0</span>
                         </div>
+                        <div id="calls-list" class="card-list"></div>
                     </div>
 
-                    <!-- Active Units Column -->
                     <div class="panel">
-                        <h3>Active Units & Status</h3>
-                        <div id="units-list" class="card-list">
-                            <!-- Populated via Socket.io -->
+                        <div class="panel-header">
+                            <h3>Active Units & Unit Roster</h3>
+                            <span id="active-units-count" class="badge">0</span>
                         </div>
+                        <div id="units-list" class="card-list"></div>
                     </div>
                 </div>
             </section>
@@ -61,82 +82,218 @@
             <!-- TAB 2: Mobile Data Terminal (MDT) -->
             <section id="tab-mdt" class="tab-pane">
                 <header class="content-header">
-                    <h1>Mobile Data Terminal (MDT)</h1>
+                    <div>
+                        <h1>Mobile Data Terminal (MDT)</h1>
+                        <p class="subtitle">Secure Law Enforcement / EMS Terminal</p>
+                    </div>
                     <div class="mdt-status-changer">
-                        <label>My Status:</label>
-                        <select id="my-status-select" onchange="updateMyStatus()">
+                        <label>Active Status:</label>
+                        <select id="my-status-select" onchange="submitStatusChange()">
                             <option value="10-8 Available">10-8 Available</option>
                             <option value="10-7 Out of Service">10-7 Out of Service</option>
                             <option value="10-6 Busy">10-6 Busy</option>
                             <option value="10-97 On Scene">10-97 On Scene</option>
                             <option value="10-41 On Duty">10-41 On Duty</option>
+                            <option value="10-42 Off Duty">10-42 Off Duty</option>
                         </select>
                     </div>
                 </header>
 
                 <div class="mdt-grid">
                     <div class="panel query-panel">
-                        <h3>Database Query</h3>
+                        <h3>DMV & Criminal Database Lookup</h3>
                         <div class="search-box">
-                            <input type="text" id="db-search-input" placeholder="Search name or license plate (e.g. John Doe, ERLC-992)...">
-                            <button class="btn secondary" onclick="runDatabaseQuery()">Search Records</button>
+                            <input type="text" id="db-search-input" placeholder="Search name, license plate, or DOB...">
+                            <button class="btn primary" onclick="runDatabaseQuery()">Run Query</button>
                         </div>
                         <div id="db-results" class="results-box">
-                            <p class="placeholder-text">Enter a name or plate to search DMV and criminal records.</p>
+                            <p class="placeholder-text">Enter a civilian name (e.g., John Doe) or vehicle plate (e.g., ERLC-992) to view records, warrants, and registrations.</p>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <h3>Quick Actions & Reports</h3>
+                        <h3>Unit Status & Location Update</h3>
                         <div class="quick-actions">
                             <div class="form-group">
-                                <label>Your Unit Identifier</label>
-                                <input type="text" id="unit-name-input" value="101 - John D.">
+                                <label>Current Location / Street / Postal</label>
+                                <input type="text" id="unit-loc-input" placeholder="e.g. Main Street / Bank Blvd (Postal 104)">
                             </div>
                             <div class="form-group">
-                                <label>Current Location</label>
-                                <input type="text" id="unit-loc-input" placeholder="e.g. Main Street / Gas Station">
+                                <label>Unit Notes / Assignment</label>
+                                <input type="text" id="unit-notes-input" placeholder="e.g. Traffic Detail / Sector 4">
                             </div>
-                            <button class="btn primary full" onclick="submitStatusUpdate()">Update Unit Status & Location</button>
+                            <button class="btn primary full" onclick="submitFullUnitUpdate()">Update MDT Status & Location</button>
+                        </div>
+
+                        <div style="margin-top: 24px;">
+                            <h3>Recent Calls Quick-View</h3>
+                            <div id="mdt-calls-ref" class="card-list" style="max-height: 200px;"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- TAB 3: BOLOs -->
+            <!-- TAB 3: Civilian Portal -->
+            <section id="tab-civilian" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>Civilian Persona Portal</h1>
+                        <p class="subtitle">Manage your ER:LC civilian characters, vehicles, and registered assets</p>
+                    </div>
+                    <button class="btn primary" onclick="openModal('civ-modal')">+ Create Civilian Persona</button>
+                </header>
+
+                <div class="panel">
+                    <h3>Registered Citizens in Liberty County</h3>
+                    <div id="civilian-list" class="card-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 4: BOLOs & Wanted Board -->
             <section id="tab-bolos" class="tab-pane">
                 <header class="content-header">
-                    <h1>BOLOs & Wanted Vehicles</h1>
-                    <button class="btn primary" onclick="openNewBoloModal()">+ Create BOLO</button>
+                    <div>
+                        <h1>BOLO & Wanted Board</h1>
+                        <p class="subtitle">Active BOLO notices broadcasted across all department MDTs</p>
+                    </div>
+                    <button class="btn primary" onclick="openModal('bolo-modal')">+ Post New BOLO</button>
                 </header>
+
                 <div class="panel">
-                    <div id="bolos-list" class="card-list">
-                        <!-- Populated via Socket.io -->
+                    <div id="bolos-list" class="card-list"></div>
+                </div>
+            </section>
+
+            <!-- TAB 5: Penal Code & 10-Codes -->
+            <section id="tab-penalcode" class="tab-pane">
+                <header class="content-header">
+                    <div>
+                        <h1>Liberty County Penal Code & 10-Codes</h1>
+                        <p class="subtitle">Standard radio codes and state laws for ER:LC roleplay</p>
+                    </div>
+                </header>
+
+                <div class="dashboard-grid">
+                    <div class="panel">
+                        <h3>Radio 10-Codes</h3>
+                        <ul class="code-list">
+                            <li><strong>10-4:</strong> Acknowledgement / Affirmative</li>
+                            <li><strong>10-8:</strong> In Service / Available</li>
+                            <li><strong>10-7:</strong> Out of Service</li>
+                            <li><strong>10-6:</strong> Busy / Tied Up</li>
+                            <li><strong>10-97:</strong> Arrived at Scene</li>
+                            <li><strong>10-41:</strong> Beginning Tour of Duty</li>
+                            <li><strong>10-42:</strong> Ending Tour of Duty</li>
+                            <li><strong>10-10:</strong> Fight / Robbery in Progress</li>
+                            <li><strong>10-31:</strong> Crime in Progress</li>
+                            <li><strong>10-50:</strong> Motor Vehicle Accident</li>
+                        </ul>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Penal Code Library</h3>
+                        <div id="penal-code-list" class="card-list"></div>
                     </div>
                 </div>
             </section>
+
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- MODALS -->
+
+    <!-- New Call Modal -->
     <div id="call-modal" class="modal">
         <div class="modal-content">
-            <h3>Create 911 / Dispatch Call</h3>
+            <h3>Dispatch New 911 Call</h3>
             <div class="form-group">
                 <label>Call Type / Code</label>
-                <input type="text" id="call-type" placeholder="e.g. 10-10 Robbery, 10-50 Accident">
+                <input type="text" id="call-type" placeholder="e.g. 10-10 Bank Robbery, 10-50 Accident">
             </div>
             <div class="form-group">
-                <label>Location</label>
-                <input type="text" id="call-location" placeholder="e.g. Liberty County Bank">
+                <label>Priority Level</label>
+                <select id="call-priority">
+                    <option value="Normal">Normal Priority</option>
+                    <option value="High">High Priority / Urgent</option>
+                    <option value="Code 3">Code 3 (Emergency Lights & Sirens)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Location & Street</label>
+                <input type="text" id="call-location" placeholder="e.g. Gas Station / Bank Blvd">
+            </div>
+            <div class="form-group">
+                <label>Postal Number</label>
+                <input type="text" id="call-postal" placeholder="e.g. 104">
             </div>
             <div class="form-group">
                 <label>Description / Details</label>
-                <textarea id="call-desc" placeholder="Details of the incident..."></textarea>
+                <textarea id="call-desc" placeholder="Details of the emergency call..."></textarea>
             </div>
             <div class="modal-buttons">
                 <button class="btn secondary" onclick="closeModals()">Cancel</button>
                 <button class="btn primary" onclick="submitNewCall()">Dispatch Call</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create BOLO Modal -->
+    <div id="bolo-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create BOLO Notice</h3>
+            <div class="form-group">
+                <label>BOLO Type</label>
+                <select id="bolo-type">
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Person">Person / Suspect</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Title / Headline</label>
+                <input type="text" id="bolo-title" placeholder="e.g. Armed Robbery Suspect Vehicle">
+            </div>
+            <div class="form-group">
+                <label>License Plate (If Vehicle)</label>
+                <input type="text" id="bolo-plate" placeholder="e.g. ERLC-992">
+            </div>
+            <div class="form-group">
+                <label>Description / Details</label>
+                <textarea id="bolo-desc" placeholder="Physical description, direction of travel, weapons involved..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn primary" onclick="submitNewBolo()">Broadcast BOLO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Civilian Modal -->
+    <div id="civ-modal" class="modal">
+        <div class="modal-content">
+            <h3>Create Civilian Persona</h3>
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="civ-name" placeholder="e.g. Michael Vance">
+            </div>
+            <div class="form-group">
+                <label>Date of Birth</label>
+                <input type="date" id="civ-dob" value="2000-01-01">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" id="civ-address" placeholder="e.g. 402 Pine Street">
+            </div>
+            <div class="form-group">
+                <label>Registered Vehicle</label>
+                <input type="text" id="civ-vehicle" placeholder="e.g. Sports Car (ERLC-331)">
+            </div>
+            <div class="form-group">
+                <label>Registered Weapons</label>
+                <input type="text" id="civ-weapons" placeholder="e.g. None or CCW Permit">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn secondary" onclick="closeModals()">Cancel</button>
+                <button class="btn primary" onclick="submitCivilianPersona()">Create Persona</button>
             </div>
         </div>
     </div>
